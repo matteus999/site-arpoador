@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin | Alambique Moderno</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --accent-orange: #e06b15;
+            --accent-green: #25D366;
+            --text-light: #ffffff;
+            --text-muted: #a0a0a0;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .logo-admin {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 3rem;
+        }
+
+        .logo-admin img {
+            height: 35px;
+        }
+
+        .logo-admin span {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-menu {
+            list-style: none;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            padding: 0.8rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(224, 107, 21, 0.1);
+            color: var(--accent-orange);
+        }
+
+        .nav-item i {
+            font-size: 1.3rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            flex-grow: 1;
+            padding: 2rem 3rem;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--accent-orange);
+        }
+
+        .stat-card .sub-value {
+            font-size: 0.8rem;
+            color: #25D366;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: #25D366;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.5; }
+            100% { transform: scale(0.95); opacity: 1; }
+        }
+
+        /* Table Area */
+        .content-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-admin {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            color: #fff;
+            width: 300px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .status-badge.active { background: rgba(37, 211, 102, 0.1); color: var(--accent-green); }
+        .status-badge.inactive { background: rgba(255, 77, 77, 0.1); color: #ff4d4d; }
+
+        .btn-action {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            border-color: var(--accent-orange);
+            color: var(--accent-orange);
+        }
+
+        .btn-primary {
+            background: var(--accent-orange);
+            color: #000;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Modal Overlay (Fake) */
+        .admin-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .admin-modal.open { display: flex; }
+
+        .modal-content {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 20px;
+            width: 500px;
+            border: 1px solid var(--border);
+        }
+
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 8px; color: #fff; appearance: none; -webkit-appearance: none; cursor: pointer; }
+        .form-group select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23a0a0a0' d='M6 8L0 0h12z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 2.5rem; }
+        .form-group select option { background: #1a1a1a; color: #fff; }
+
+        /* View Sections */
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
+
+        @media (max-width: 1024px) {
+            .sidebar { width: 80px; padding: 2rem 0.5rem; align-items: center; }
+            .logo-admin span, .nav-item span { display: none; }
+            .main-content { margin-left: 80px; padding: 1.5rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<script>
+(function() {
+    var SENHA_ADMIN = 'alambiqueteste';
+    var salva = sessionStorage.getItem('admin_auth');
+    if (salva === SENHA_ADMIN) return;
+    var tentativa = prompt('🔒 Área restrita. Digite a senha de acesso:');
+    if (tentativa !== SENHA_ADMIN) {
+        document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;color:#ff4d4d;font-family:Inter,sans-serif;font-size:1.5rem;">⛔ Acesso negado.</div>';
+        throw new Error('Acesso negado');
+    }
+    sessionStorage.setItem('admin_auth', SENHA_ADMIN);
+})();
+</script>
+
+    <aside class="sidebar">
+        <div class="logo-admin">
+            <img src="assets/logo.png" onerror="this.src='https://via.placeholder.com/40'">
+            <span>ADMIN</span>
+        </div>
+        
+        <nav class="nav-menu">
+            <div class="nav-item active" data-section="products">
+                <i class="ph-fill ph-grid-four"></i>
+                <span>Produtos</span>
+            </div>
+            <div class="nav-item" data-section="coupons">
+                <i class="ph-fill ph-ticket"></i>
+                <span>Cupons</span>
+            </div>
+            <div class="nav-item" data-section="orders">
+                <i class="ph-fill ph-shopping-bag"></i>
+                <span>Pedidos</span>
+            </div>
+            <div class="nav-item" data-section="reports">
+                <i class="ph-fill ph-chart-line-up"></i>
+                <span>Relatórios</span>
+            </div>
+        </nav>
+
+        <div class="nav-item" style="margin-top: auto; color: #ff4d4d;">
+            <i class="ph-bold ph-sign-out"></i>
+            <span>Sair</span>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <!-- Seção de Produtos -->
+        <section id="section-products" class="admin-section active">
+            <div class="header-actions">
+                <h1>Gestão de Estoque</h1>
+                <button class="btn-primary" onclick="openModal('product')">
+                    <i class="ph ph-plus-circle"></i> Novo Produto
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="label">Total Itens</span>
+                    <span class="value" id="stat-total">584</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Categorias</span>
+                    <span class="value">12</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Cupons Ativos</span>
+                    <span class="value" id="stat-coupons">2</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Acessos Hoje</span>
+                    <span class="value realtime-visits">0</span>
+                    <div class="sub-value">
+                        <span class="pulse-dot"></span>
+                        <span class="realtime-live">1</span> online agora
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <div class="table-header">
+                    <h3>Lista de Produtos</h3>
+                    <input type="text" class="search-admin" placeholder="Pesquisar por nome..." id="admin-search">
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Categoria</th>
+                            <th>Preço</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Seção de Cupons -->
+        <section id="section-coupons" class="admin-section">
+            <div class="header-actions">
+                <h1>Cupons de Desconto</h1>
+                <button class="btn-primary" onclick="openModal('coupon')">
+                    <i class="ph ph-plus-circle"></i> Novo Cupom
+                </button>
+            </div>
+
+            <div class="content-card">
+                <div class="table-header">
+                    <h3>Cupons Ativos</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Desconto</th>
+                            <th>Uso</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coupon-table-body">
+                        <!-- Gerado dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Seção de Pedidos -->
+        <section id="section-orders" class="admin-section">
+            <div class="header-actions">
+                <h1>Histórico de Pedidos</h1>
+                <button class="btn-action" onclick="clearOrders()"><i class="ph ph-trash"></i> Limpar Histórico</button>
+            </div>
+
+            <div class="content-card">
+                <div class="table-header">
+                    <h3>Últimos Pedidos Recebidos</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Pedido</th>
+                            <th>Data</th>
+                            <th>Cliente / Telefone</th>
+                            <th>Itens</th>
+                            <th>Total</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orders-table-body">
+                        <!-- Gerado dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Seção de Relatórios -->
+        <section id="section-reports" class="admin-section">
+            <div class="header-actions">
+                <h1>Visão Geral Financeira</h1>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="label">Acessos Hoje</span>
+                    <span class="value realtime-visits">0</span>
+                    <div class="sub-value">
+                        <span class="pulse-dot"></span>
+                        <span class="realtime-live">1</span> online agora
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Faturamento Total</span>
+                    <span class="value" id="report-revenue">R$ 0,00</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Total de Pedidos</span>
+                    <span class="value" id="report-orders">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="label">Ticket Médio</span>
+                    <span class="value" id="report-ticket">R$ 0,00</span>
+                </div>
+            </div>
+
+            <style>
+                @keyframes pulse {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.3; }
+                    100% { opacity: 1; }
+                }
+            </style>
+
+            <div class="content-card">
+                <div class="table-header">
+                    <h3>Vendas por Método de Pagamento</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Método</th>
+                            <th>Quantidade de Pedidos</th>
+                            <th>Valor Total (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-payment-table">
+                        <!-- Gerado dinamicamente -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Unificado -->
+    <div class="admin-modal" id="admin-modal">
+        <div class="modal-content" id="modal-container">
+            <!-- Conteúdo muda conforme o tipo -->
+        </div>
+    </div>
+
+    <script src="produtos.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // === SUPABASE ===
+        var SUPABASE_URL = 'https://odrcpiaqdsfugrrcmigw.supabase.co';
+        var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kcmNwaWFxZHNmdWdycmNtaWd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwODA3NjQsImV4cCI6MjA5MjY1Njc2NH0.mWSFpy6uMMNgWmtK8IutKjjdxPYFaps6JWyv_LhiwF4';
+        var sb = null;
+        try {
+            if (window.supabase && window.supabase.createClient) {
+                sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+        } catch(e) { console.warn('Supabase offline:', e); }
+
+        // === ELEMENTOS ===
+        var productsTable = document.getElementById('admin-table-body');
+        var couponsTable = document.getElementById('coupon-table-body');
+        var ordersTable = document.getElementById('orders-table-body');
+        var modal = document.getElementById('admin-modal');
+        var modalContainer = document.getElementById('modal-container');
+
+        // === ESTADO ===
+        var products = [];
+        var couponsList = [
+            { code: 'ALAMBIQUE10', discount: '10%', usage: 45, limit: 100, active: true },
+            { code: 'FESTA20', discount: '20%', usage: 12, limit: 50, active: true }
+        ];
+
+        // === SYNC HELPER (Supabase sync_data) ===
+        async function syncToSupabase(key, value) {
+            if (!sb) return;
+            try {
+                await sb.from('sync_data').upsert({ key: key, value: value, updated_at: new Date().toISOString() });
+            } catch(e) { console.warn('Sync error:', e); }
+            // Backup em localStorage
+            localStorage.setItem('alambique_' + key, JSON.stringify(value));
+        }
+
+        async function loadFromSupabase(key) {
+            if (!sb) return null;
+            try {
+                var resp = await sb.from('sync_data').select('value').eq('key', key).single();
+                if (!resp.error && resp.data) return resp.data.value;
+            } catch(e) {}
+            return null;
+        }
+
+        // === CORREÇÃO DE ACENTOS ===
+        function fix(t) {
+            if (!t) return '';
+            return String(t)
+                .replace(/Ã©/g, 'é').replace(/Ã¡/g, 'á').replace(/Ã£/g, 'ã')
+                .replace(/Ã³/g, 'ó').replace(/Ãº/g, 'ú').replace(/Ãª/g, 'ê')
+                .replace(/Ã§/g, 'ç').replace(/Ã­/g, 'í').replace(/Ãƒ/g, 'ã')
+                .replace(/Ã‰/g, 'É').replace(/Ã"/g, 'Ó');
+        }
+
+        // === NAVEGAÇÃO DE ABAS ===
+        document.querySelectorAll('.nav-item[data-section]').forEach(function(item) {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.nav-item').forEach(function(i) { i.classList.remove('active'); });
+                document.querySelectorAll('.admin-section').forEach(function(s) { s.classList.remove('active'); });
+                item.classList.add('active');
+                var sectionId = 'section-' + item.dataset.section;
+                var section = document.getElementById(sectionId);
+                if (section) section.classList.add('active');
+                if (item.dataset.section === 'orders') renderOrders();
+                else if (item.dataset.section === 'reports') renderReports();
+            });
+        });
+
+        // === VISITAS & PRESENCE EM TEMPO REAL ===
+        async function initVisitsRealtime() {
+            if (!sb) return;
+            var today = new Date().toISOString().split('T')[0];
+            var key = 'visits_' + today;
+            var visitEls = document.querySelectorAll('.realtime-visits');
+            var liveEls = document.querySelectorAll('.realtime-live');
+
+            function updateUI(total, live) {
+                if (total !== undefined) visitEls.forEach(el => el.textContent = total);
+                if (live !== undefined) liveEls.forEach(el => el.textContent = live);
+            }
+
+            // 1. Hoje Total (DB)
+            var initial = await loadFromSupabase(key);
+            updateUI(initial || '0');
+
+            sb.channel('db-visits')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'sync_data', filter: 'key=eq.' + key }, (payload) => {
+                    if (payload.new && payload.new.value) {
+                        updateUI(payload.new.value);
+                        visitEls.forEach(el => {
+                            el.style.color = '#fff';
+                            setTimeout(() => { el.style.color = 'var(--accent-orange)'; }, 300);
+                        });
+                    }
+                })
+                .subscribe();
+
+            // 2. Online Agora (Presence)
+            const presenceChannel = sb.channel('online-users');
+            presenceChannel
+                .on('presence', { event: 'sync' }, () => {
+                    const state = presenceChannel.presenceState();
+                    const count = Object.keys(state).length;
+                    updateUI(undefined, count);
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await presenceChannel.track({ online_at: new Date().toISOString(), user: 'admin' });
+                    }
+                });
+        }
+        initVisitsRealtime();
+
+        // === RELATÓRIOS ===
+        async function renderReports() {
+            var orders = [];
+            try {
+                var localOrders = JSON.parse(localStorage.getItem('alambique_orders') || '[]');
+                if (localOrders.length > 0) orders = localOrders;
+            } catch(e) {}
+
+            if (sb && orders.length === 0) {
+                try {
+                    var resp = await sb.from('orders').select('*');
+                    if (!resp.error && resp.data) orders = resp.data;
+                } catch(e) {}
+            }
+
+            var totalRevenue = 0;
+            var totalOrders = orders.length;
+            var paymentStats = {};
+            var itemStats = {};
+
+            orders.forEach(function(o) {
+                var orderTotal = typeof o.total === 'number' ? o.total : parseFloat(o.total || 0);
+                totalRevenue += orderTotal;
+
+                var payMethod = o.payment || 'Desconhecido';
+                if (!paymentStats[payMethod]) paymentStats[payMethod] = { count: 0, total: 0 };
+                paymentStats[payMethod].count++;
+                paymentStats[payMethod].total += orderTotal;
+
+                if (o.items && Array.isArray(o.items)) {
+                    o.items.forEach(function(i) {
+                        var itemName = fix(i.name);
+                        var qty = i.qty || i.quantity || 1;
+                        if (!itemStats[itemName]) itemStats[itemName] = 0;
+                        itemStats[itemName] += qty;
+                    });
+                }
+            });
+
+            var ticketMedio = totalOrders > 0 ? (totalRevenue / totalOrders) : 0;
+            
+            var topItemName = '-';
+            var topItemQty = 0;
+            for (var name in itemStats) {
+                if (itemStats[name] > topItemQty) {
+                    topItemQty = itemStats[name];
+                    topItemName = name;
+                }
+            }
+
+            document.getElementById('report-revenue').textContent = 'R$ ' + totalRevenue.toFixed(2).replace('.', ',');
+            document.getElementById('report-orders').textContent = totalOrders;
+            document.getElementById('report-ticket').textContent = 'R$ ' + ticketMedio.toFixed(2).replace('.', ',');
+            document.getElementById('report-top-item').textContent = topItemName + ' (' + topItemQty + 'x)';
+
+            var paymentHtml = '';
+            for (var pm in paymentStats) {
+                paymentHtml += '<tr>' +
+                    '<td><strong>' + pm + '</strong></td>' +
+                    '<td>' + paymentStats[pm].count + '</td>' +
+                    '<td>R$ ' + paymentStats[pm].total.toFixed(2).replace('.', ',') + '</td>' +
+                '</tr>';
+            }
+            if (paymentHtml === '') {
+                paymentHtml = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Nenhum dado financeiro.</td></tr>';
+            }
+            var pTable = document.getElementById('report-payment-table');
+            if (pTable) pTable.innerHTML = paymentHtml;
+        }
+
+        // === PRODUTOS ===
+        function renderProducts() {
+            if (!productsTable) return;
+            productsTable.innerHTML = products.map(function(p) {
+                return '<tr>' +
+                    '<td style="display:flex;align-items:center;gap:10px;">' +
+                        '<img src="' + p.image + '" onerror="this.src=\'assets/logo.png\'" style="width:35px;height:35px;border-radius:6px;object-fit:cover;">' +
+                        fix(p.name) +
+                    '</td>' +
+                    '<td>' + fix(p.category) + '</td>' +
+                    '<td>R$ ' + p.price.toFixed(2).replace('.', ',') + '</td>' +
+                    '<td><span class="status-badge active">Ativo</span></td>' +
+                    '<td>' +
+                        '<button class="btn-action" onclick="openModal(\'product\', \'' + p.id + '\')" title="Editar"><i class="ph ph-pencil"></i></button>' +
+                        '<button class="btn-action" style="color:#ff4d4d;margin-left:5px;" onclick="deleteProduct(\'' + p.id + '\')" title="Excluir"><i class="ph ph-trash"></i></button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        // === PEDIDOS ===
+        async function renderOrders() {
+            if (!ordersTable) return;
+            var orders = [];
+
+            // Ler pedidos do localStorage (salvos pelo checkout)
+            try {
+                var localOrders = JSON.parse(localStorage.getItem('alambique_orders') || '[]');
+                if (localOrders.length > 0) orders = localOrders;
+            } catch(e) { console.warn('Erro localStorage:', e); }
+
+            // Tentar complementar com Supabase
+            if (sb && orders.length === 0) {
+                try {
+                    var resp = await sb.from('orders').select('*').order('date', { ascending: false });
+                    if (!resp.error && resp.data && resp.data.length > 0) orders = resp.data;
+                } catch(e) { console.warn('Supabase offline:', e); }
+            }
+
+            if (orders.length === 0) {
+                ordersTable.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted);">Nenhum pedido registrado ainda.</td></tr>';
+                return;
+            }
+
+            ordersTable.innerHTML = orders.map(function(o) {
+                var itemsText = '';
+                if (o.items && Array.isArray(o.items)) {
+                    itemsText = o.items.map(function(i) {
+                        var q = i.qty || i.quantity || 1;
+                        return q + 'x ' + fix(i.name);
+                    }).join(', ');
+                }
+                var totalVal = typeof o.total === 'number' ? o.total.toFixed(2).replace('.', ',') : (o.total || '0,00');
+                var orderId = o.order_id || o.id || '???';
+                var dateStr = o.date || '';
+                var customer = o.customer || 'N/A';
+                var phone = o.phone || '';
+                var address = o.address || 'Não informado';
+                var dbId = o.id || '';
+
+                return '<tr>' +
+                    '<td><strong style="color:var(--accent-orange);">' + orderId + '</strong></td>' +
+                    '<td style="font-size:0.8rem;">' + dateStr + '</td>' +
+                    '<td><div><strong>' + customer + '</strong></div><div style="font-size:0.8rem;color:var(--text-muted);">' + phone + '</div></td>' +
+                    '<td style="font-size:0.8rem;">' + itemsText + '</td>' +
+                    '<td style="font-weight:700;">R$ ' + totalVal + '</td>' +
+                    '<td>' +
+                        '<button class="btn-action" onclick="alert(\'Endereço: ' + address.replace(/'/g, "\\'") + '\')" title="Ver Endereço"><i class="ph ph-map-pin"></i></button>' +
+                        '<button class="btn-action" style="color:#ff4d4d;margin-left:5px;" onclick="deleteOrder(' + dbId + ')" title="Excluir"><i class="ph ph-trash"></i></button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        // === CUPONS ===
+        function renderCoupons() {
+            if (!couponsTable) return;
+            couponsTable.innerHTML = couponsList.map(function(c, i) {
+                return '<tr>' +
+                    '<td><strong>' + c.code + '</strong></td>' +
+                    '<td>' + c.discount + '</td>' +
+                    '<td>' + c.usage + ' / ' + c.limit + '</td>' +
+                    '<td><span class="status-badge ' + (c.active ? 'active' : 'inactive') + '">' + (c.active ? 'Ativo' : 'Inativo') + '</span></td>' +
+                    '<td>' +
+                        '<button class="btn-action" onclick="openModal(\'coupon\', ' + i + ')"><i class="ph ph-pencil"></i></button>' +
+                        '<button class="btn-action" style="color:#ff4d4d;" onclick="deleteCoupon(' + i + ')"><i class="ph ph-trash"></i></button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+            var statEl = document.getElementById('stat-coupons');
+            if (statEl) statEl.textContent = couponsList.length;
+            // Sincronizar cupons com Supabase + localStorage
+            syncToSupabase('coupons', couponsList);
+        }
+
+        // === MODAL ===
+        function openModal(type, id) {
+            modal.classList.add('open');
+            if (type === 'product') {
+                var p = { name: '', price: '', category: '', image: '' };
+                if (id) {
+                    var found = products.find(function(x) { return x.id === id || x.id === String(id); });
+                    if (found) p = found;
+                }
+                var cats = ['Cervejas','Destilados','Vinhos','Energéticos','Bebidas Não Alcoólicas','Snacks e Congelados','Doces e Bomboniere','Padaria','Tabacaria','Outros'];
+                var catOptions = cats.map(function(c) {
+                    var sel = (fix(p.category || '') === c) ? ' selected' : '';
+                    return '<option value="' + c + '"' + sel + '>' + c + '</option>';
+                }).join('');
+                modalContainer.innerHTML =
+                    '<h2>' + (id ? 'Editar Produto' : 'Novo Produto') + '</h2><br>' +
+                    '<div class="form-group"><label>Nome do Produto</label><input type="text" id="p-name" value="' + fix(p.name || '') + '"></div>' +
+                    '<div class="form-group"><label>Categoria</label><select id="p-category">' + catOptions + '</select></div>' +
+                    '<div class="form-group"><label>Preço (R$)</label><input type="number" step="0.01" id="p-price" value="' + (p.price || '') + '"></div>' +
+                    '<div class="form-group"><label>Link/Caminho da Imagem</label><input type="text" id="p-image" value="' + (p.image || '') + '" placeholder="Ex: assets/produto.jpg"></div>' +
+                    '<div style="display:flex;gap:10px;">' +
+                        '<button class="btn-primary" style="flex:1" onclick="saveProduct(\'' + (id || '') + '\')">Salvar Produto</button>' +
+                        '<button class="btn-action" style="flex:1" onclick="closeModal()">Cancelar</button>' +
+                    '</div>';
+            } else if (type === 'coupon') {
+                var c = (id !== null && id !== undefined) ? couponsList[id] : { code: '', discount: '', limit: '' };
+                var pctValue = c.discount ? c.discount.replace('%', '') : '';
+                modalContainer.innerHTML =
+                    '<h2>' + (id !== null && id !== undefined ? 'Editar Cupom' : 'Novo Cupom') + '</h2><br>' +
+                    '<div class="form-group"><label>Código do Cupom</label><input type="text" id="edit-coupon-code" value="' + c.code + '" placeholder="Ex: VERAO15"></div>' +
+                    '<div class="form-group"><label>Desconto (%)</label><input type="number" id="edit-coupon-pct" value="' + pctValue + '" placeholder="Ex: 15"></div>' +
+                    '<div class="form-group"><label>Limite de Usos</label><input type="number" id="edit-coupon-limit" value="' + c.limit + '" placeholder="Ex: 100"></div>' +
+                    '<div style="display:flex;gap:10px;">' +
+                        '<button class="btn-primary" style="flex:1" onclick="saveCoupon(' + (id !== null && id !== undefined ? id : 'null') + ')">' + (id !== null && id !== undefined ? 'Atualizar' : 'Criar Cupom') + '</button>' +
+                        '<button class="btn-action" style="flex:1" onclick="closeModal()">Cancelar</button>' +
+                    '</div>';
+            }
+        }
+
+        function closeModal() { modal.classList.remove('open'); }
+
+        // === AÇÕES GLOBAIS ===
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.renderOrders = renderOrders;
+
+        window.saveProduct = async function(id) {
+            var name = document.getElementById('p-name').value.trim();
+            var price = parseFloat(document.getElementById('p-price').value);
+            var category = document.getElementById('p-category').value.trim();
+            var image = document.getElementById('p-image').value.trim();
+            if (!name || isNaN(price)) { alert('Preencha nome e preço!'); return; }
+
+            var productData = {
+                id: id || 'p' + Date.now(),
+                name: name,
+                price: price,
+                category: category || 'Geral',
+                image: image || 'assets/logo.png'
+            };
+
+            if (id) {
+                var idx = products.findIndex(function(p) { return p.id === id || p.id === String(id); });
+                if (idx !== -1) products[idx] = productData;
+                else products.unshift(productData);
+                // Sincronizar edição com Supabase
+                var edited = (await loadFromSupabase('edited')) || {};
+                edited[String(id)] = productData;
+                await syncToSupabase('edited', edited);
+            } else {
+                products.unshift(productData);
+                // Sincronizar adição com Supabase
+                var added = (await loadFromSupabase('added')) || [];
+                added.unshift(productData);
+                await syncToSupabase('added', added);
+            }
+
+            renderProducts();
+            closeModal();
+            alert('Produto salvo! Mudanças visíveis para todos os clientes.');
+        };
+
+        window.deleteProduct = async function(id) {
+            if (confirm('Tem certeza que deseja excluir este produto?')) {
+                var idx = products.findIndex(function(p) { return p.id === id || p.id === String(id); });
+                if (idx !== -1) {
+                    products.splice(idx, 1);
+                    // Sincronizar exclusão com Supabase
+                    var deleted = (await loadFromSupabase('deleted')) || [];
+                    if (deleted.indexOf(String(id)) === -1) deleted.push(String(id));
+                    await syncToSupabase('deleted', deleted);
+                    // Remover das edições
+                    var edited = (await loadFromSupabase('edited')) || {};
+                    delete edited[String(id)];
+                    await syncToSupabase('edited', edited);
+                    // Remover dos adicionados
+                    var added = (await loadFromSupabase('added')) || [];
+                    added = added.filter(function(p) { return String(p.id) !== String(id); });
+                    await syncToSupabase('added', added);
+                    renderProducts();
+                    alert('Produto excluído! Mudança visível para todos.');
+                }
+            }
+        };
+
+        window.saveCoupon = function(index) {
+            var code = document.getElementById('edit-coupon-code').value.toUpperCase().trim();
+            var pct = document.getElementById('edit-coupon-pct').value;
+            var limit = document.getElementById('edit-coupon-limit').value;
+            if (!code || !pct || !limit) { alert('Preencha todos os campos!'); return; }
+
+            var couponData = {
+                code: code,
+                discount: pct + '%',
+                limit: parseInt(limit),
+                usage: (index !== null && index !== undefined && couponsList[index]) ? couponsList[index].usage : 0,
+                active: true
+            };
+
+            if (index !== null && index !== undefined && couponsList[index]) {
+                couponsList[index] = couponData;
+            } else {
+                couponsList.push(couponData);
+            }
+
+            renderCoupons();
+            closeModal();
+            alert(index !== null && index !== undefined ? 'Cupom atualizado!' : 'Cupom criado!');
+        };
+
+        window.deleteCoupon = function(index) {
+            if (confirm('Tem certeza que deseja excluir este cupom?')) {
+                couponsList.splice(index, 1);
+                renderCoupons();
+            }
+        };
+
+        window.deleteOrder = function(id) {
+            if (confirm('Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.')) {
+                try {
+                    var orders = JSON.parse(localStorage.getItem('alambique_orders') || '[]');
+                    orders = orders.filter(function(o) { return o.id !== id && String(o.id) !== String(id); });
+                    localStorage.setItem('alambique_orders', JSON.stringify(orders));
+                    renderOrders();
+                    alert('Pedido excluído.');
+                } catch(e) { alert('Erro ao excluir: ' + e.message); }
+            }
+        };
+
+        window.clearOrders = function() {
+            if (confirm('Deseja limpar todo o histórico de pedidos? Esta ação não pode ser desfeita.')) {
+                localStorage.removeItem('alambique_orders');
+                renderOrders();
+                alert('Histórico limpo.');
+            }
+        };
+
+        // === INICIALIZAÇÃO ===
+        function initAdmin() {
+            if (typeof CATALOG_PRODUCTS !== 'undefined') {
+                products = CATALOG_PRODUCTS.slice(0, 50);
+                var totalStat = document.getElementById('stat-total');
+                if (totalStat) totalStat.textContent = CATALOG_PRODUCTS.length;
+            }
+            renderProducts();
+            renderCoupons();
+            renderOrders();
+        }
+
+        initAdmin();
+    });
+    </script>
+</body>
+</html>
