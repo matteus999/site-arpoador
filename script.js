@@ -137,8 +137,28 @@ function renderCatalog(searchTerm) {
         });
     }
 
+    // Sort to place "Pratos 1p" and "Pratos 2p" at the top
+    var sorted = filtered.slice().sort(function(a, b) {
+        var catA = (a.category || '').toLowerCase();
+        var catB = (b.category || '').toLowerCase();
+        
+        var isA_Top = (catA === 'pratos 1p' || catA === 'pratos 2p');
+        var isB_Top = (catB === 'pratos 1p' || catB === 'pratos 2p');
+        
+        if (isA_Top && !isB_Top) return -1;
+        if (!isA_Top && isB_Top) return 1;
+        
+        // If both are top, prioritize "Pratos 1p" over "Pratos 2p"
+        if (isA_Top && isB_Top) {
+            if (catA === 'pratos 1p' && catB === 'pratos 2p') return -1;
+            if (catA === 'pratos 2p' && catB === 'pratos 1p') return 1;
+        }
+        
+        return 0; // maintain original order
+    });
+
     // Render products
-    grid.innerHTML = filtered.map(function(p) {
+    grid.innerHTML = sorted.map(function(p) {
         return '<div class="product-card">' +
             '<div class="product-image-container">' +
                 '<img src="' + p.image + '" alt="' + p.name + '" class="product-image" onerror="this.src=\'assets/logo.png\'">' +
