@@ -56,8 +56,11 @@
             </div>
             <h1 style="font-size: 3.5rem; color: #ffffff; margin-bottom: 20px; line-height: 1.2;">O Sabor da Praia<br><span style="color: #FFC107;">na Armação</span></h1>
             <p style="font-size: 1.2rem; color: #e0f2fe; margin-bottom: 30px; max-width: 600px;">Porções de frutos do mar, camarãozinho, chopp gelado e caipirinhas. Sua refeição completa ou conveniência rápida de frente pro mar!</p>
-            <div class="hero-buttons">
-                <a href="https://wa.me/5548999999999" target="_blank" class="btn btn-primary btn-large" style="background: #FFC107; color: #00476e; padding: 15px 30px; border-radius: 10px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);">
+            <div class="hero-buttons" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <a href="javascript:void(0)" onclick="openCatalog()" class="btn btn-primary btn-large" style="background: #FFC107; color: #00476e; padding: 15px 30px; border-radius: 10px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4); cursor: pointer;">
+                    <i class="ph-fill ph-storefront"></i> VER CATÁLOGO E PEDIR
+                </a>
+                <a href="https://wa.me/5548999999999" target="_blank" class="btn btn-primary btn-large" style="background: rgba(255,255,255,0.15); color: #ffffff; padding: 15px 30px; border-radius: 10px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.3);">
                     <i class="ph-fill ph-whatsapp-logo"></i> FALE CONOSCO
                 </a>
             </div>
@@ -110,6 +113,164 @@
             </div>
         </div>
     </section>
+
+    <!-- Catalog Modal -->
+    <div class="catalog-modal" id="catalog-modal">
+        <div class="catalog-header">
+            <div class="catalog-header-top">
+                <h2><i class="ph-fill ph-storefront"></i> Nosso Catálogo</h2>
+                <div class="catalog-header-actions">
+                    <div class="catalog-cart-btn" id="catalog-cart-btn" onclick="openCart()">
+                        <i class="ph-fill ph-shopping-cart"></i>
+                        <span class="cart-count" id="catalog-cart-count">0</span>
+                    </div>
+                    <button id="close-catalog-btn" onclick="closeCatalog()"><i class="ph ph-x"></i></button>
+                </div>
+            </div>
+            <div class="catalog-search-bar">
+                <i class="ph ph-magnifying-glass"></i>
+                <input type="text" id="catalog-search-input" placeholder="Buscar produto...">
+            </div>
+            <div class="catalog-categories-wrapper">
+                <div class="catalog-categories" id="catalog-categories"></div>
+            </div>
+        </div>
+        <div class="catalog-body">
+            <div class="catalog-grid" id="catalog-grid"></div>
+        </div>
+    </div>
+
+    <!-- Cart Overlay -->
+    <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h2><i class="ph-fill ph-shopping-cart"></i> Seu Carrinho</h2>
+            <button id="close-cart-btn" onclick="closeCart()"><i class="ph ph-x"></i></button>
+        </div>
+
+        <!-- View 1: Cart Items -->
+        <div class="cart-view active" id="cart-view-items">
+            <div class="cart-items" id="cart-items-list">
+                <div class="cart-empty-msg" id="cart-empty-msg">Seu carrinho está vazio</div>
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Total</span>
+                    <span id="cart-total-value">R$ 0,00</span>
+                </div>
+                <div class="cart-tax-info">Frete e taxas calculados na finalização</div>
+                <button id="go-to-checkout-btn" onclick="goToCheckout()" disabled>
+                    <i class="ph-fill ph-arrow-right"></i> FINALIZAR PEDIDO
+                </button>
+                <div class="min-order-msg" id="min-order-msg"></div>
+            </div>
+        </div>
+
+        <!-- View 2: Checkout Form -->
+        <div class="cart-view" id="cart-view-checkout">
+            <div class="checkout-form">
+                <button class="back-btn" onclick="backToCart()">
+                    <i class="ph ph-arrow-left"></i> Voltar ao carrinho
+                </button>
+                <h3>Dados para Entrega</h3>
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="checkout-name" placeholder="Seu nome completo">
+                </div>
+                <div class="form-group">
+                    <label>Telefone (WhatsApp)</label>
+                    <input type="tel" id="checkout-phone" placeholder="(48) 99999-9999">
+                </div>
+                <div class="form-group">
+                    <label>Endereço de Entrega</label>
+                    <textarea id="checkout-address" placeholder="Rua, número, bairro, complemento..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Forma de Pagamento</label>
+                    <select id="checkout-payment" onchange="onPaymentChange()">
+                        <option value="">Selecione...</option>
+                        <option value="Dinheiro">💵 Dinheiro</option>
+                        <option value="Cartão (Débito)">💳 Cartão (Débito)</option>
+                        <option value="Cartão (Crédito)">💳 Cartão (Crédito)</option>
+                        <option value="PIX">📱 PIX</option>
+                    </select>
+                </div>
+
+                <!-- PIX Payment Notice -->
+                <div class="pix-notice" id="pix-notice" style="display: none;">
+                    <div class="pix-notice-header">
+                        <div class="pix-icon-badge">
+                            <svg viewBox="0 0 512 512" width="28" height="28" fill="#32BCAD">
+                                <path d="M395.5 234.5l-79.8-79.8c-10.8-10.8-28.3-10.8-39.1 0L196.8 234.5c-10.8 10.8-10.8 28.3 0 39.1l79.8 79.8c10.8 10.8 28.3 10.8 39.1 0l79.8-79.8c10.8-10.8 10.8-28.3 0-39.1zM256 0L142.4 113.6 256 227.2 369.6 113.6 256 0zM113.6 142.4L0 256l113.6 113.6L227.2 256 113.6 142.4zM398.4 142.4L284.8 256l113.6 113.6L512 256 398.4 142.4zM256 284.8L142.4 398.4 256 512l113.6-113.6L256 284.8z"/>
+                            </svg>
+                        </div>
+                        <h4>Pagamento via PIX</h4>
+                    </div>
+                    <div class="pix-qr-container">
+                        <img src="assets/pix-qrcode.png" alt="QR Code PIX" class="pix-qr-image" id="pix-qr-image">
+                    </div>
+                    <div class="pix-key-section">
+                        <span class="pix-key-label">Chave PIX (Telefone):</span>
+                        <div class="pix-key-value" id="pix-key-value">
+                            <span>48991228857</span>
+                            <button class="pix-copy-btn" onclick="copyPixKey()" title="Copiar chave">
+                                <i class="ph ph-copy"></i>
+                            </button>
+                        </div>
+                        <span class="pix-copied-msg" id="pix-copied-msg">✅ Chave copiada!</span>
+                    </div>
+                    <div class="pix-warning">
+                        <i class="ph-fill ph-warning-circle"></i>
+                        <div>
+                            <strong>⚠️ Atenção!</strong>
+                            <p>Após realizar o pagamento via PIX, envie o <strong>comprovante</strong> junto com os <strong>detalhes do pedido</strong> diretamente para o nosso <strong>WhatsApp</strong>. Somente assim o pedido poderá ser <strong>confirmado</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coupon Section -->
+                <div class="coupon-section">
+                    <div class="form-group">
+                        <label>Cupom de Desconto</label>
+                        <div class="coupon-input-wrapper">
+                            <input type="text" id="coupon-input" placeholder="Digite o cupom">
+                            <button id="apply-coupon-btn" onclick="applyCoupon()">APLICAR</button>
+                        </div>
+                        <div class="coupon-message" id="coupon-message"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Observações (opcional)</label>
+                    <textarea id="checkout-obs" placeholder="Alguma instrução especial?"></textarea>
+                </div>
+            </div>
+
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Total</span>
+                    <span id="checkout-total-value">R$ 0,00</span>
+                </div>
+                <button id="checkout-btn" onclick="sendToWhatsApp()">
+                    <i class="ph-fill ph-whatsapp-logo"></i> ENVIAR PEDIDO
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Cart Button -->
+    <div class="fab-cart hidden" id="fab-cart" onclick="openCart()">
+        <div class="cart-icon-wrapper">
+            <i class="ph-fill ph-shopping-cart"></i>
+            <span class="cart-count" id="fab-cart-count">0</span>
+        </div>
+        <span class="cart-fab-total" id="fab-cart-total">R$ 0,00</span>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
 
     <!-- Footer -->
     <footer style="background: #00476e; padding: 40px 0; text-align: center; border-top: none;">
